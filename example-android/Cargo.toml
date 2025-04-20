@@ -16,5 +16,15 @@ rust-native-core = { path = "../rust-native-core" }
 rust-native-core-android = { path = "../rust-native-core-android" }
 rust-native-ui = { path = "../rust-native-ui" }
 
+[package.metadata.android]
+# package = "com.rustnative.example"
+# target_sdk_version = 33
+# min_sdk_version = 21
+# # assets = "assets"
+# # resources = "res"
+# icon = "res/icon.png"
+# build_targets = ["aarch64-linux-android"]
+java_sources = ["android/src/main/java"]
+
 [lib]
 crate-type = ["cdylib"]

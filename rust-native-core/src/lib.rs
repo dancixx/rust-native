@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct ElementId(pub u32);
 
 pub type Callback = Arc<dyn Fn() + Send + Sync + 'static>;

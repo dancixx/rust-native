@@ -63,6 +63,13 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
                 &[JValue::from(&self.context)],
             )
             .expect("Failed to create LinearLayout");
+
+        self.env
+            .call_method(&layout, "setBackgroundColor", "(I)V", &[JValue::Int(
+                0xFFFFFFFFu32 as i32,
+            )])
+            .expect("Failed to set background color");
+
         self.views.insert(id, layout);
         id
     }
@@ -79,6 +86,15 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
     }
 
     fn commit(&mut self) {
-        unimplemented!()
+        let root_view = self.views.get(&ElementId(0)).expect("No root view set");
+
+        self.env
+            .call_static_method(
+                "com/rustnative/UiHelper",
+                "setContentViewOnUiThread",
+                "(Landroid/app/Activity;Landroid/view/View;)V",
+                &[JValue::from(&self.context), JValue::from(root_view)],
+            )
+            .expect("Failed to call setContentView via UiHelper");
     }
 }
