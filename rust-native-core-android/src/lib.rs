@@ -1,7 +1,6 @@
 use ahash::AHashMap;
-use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
-use jni::strings::JNIString;
-use jni::{JNIEnv, NativeMethod};
+use jni::JNIEnv;
+use jni::objects::{JObject, JValue};
 use rust_native_core::{Callback, ElementId, PlatformRenderer};
 
 pub struct AndroidRenderer<'a> {
