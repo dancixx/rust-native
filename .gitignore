@@ -1,1 +1,30 @@
+# Rust
 /target
+**/target/
+**/*.rs.bk
+
+# Cargo
+.cargo/config.toml
+
+# Gradle
+android/.gradle/
+android/build/
+android/app/build/
+build/
+
+# IDEs
+.idea/
+*.iml
+.gradle/
+.vscode/
+
+# APKs and outputs
+*.apk
+**/build/outputs/apk/
+
+# OS files
+.DS_Store
+*~
+
+# Logs
+*.log

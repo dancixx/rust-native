@@ -1,11 +1,21 @@
+use once_cell::sync::OnceCell;
+
 use android_activity::{AndroidApp, InputStatus, MainEvent, PollEvent};
-use jni::{JavaVM, objects::JObject};
+use jni::{
+    JNIEnv, JavaVM, NativeMethod,
+    objects::{GlobalRef, JClass, JObject, JValue},
+    strings::JNIString,
+    sys::JNINativeMethod,
+};
 use rust_native_core::{Component, PlatformRenderer};
 use rust_native_core_android::AndroidRenderer;
 use rust_native_ui::text::Text;
 
 #[unsafe(no_mangle)]
 fn android_main(app: AndroidApp) {
+    unsafe {
+        std::env::set_var("RUST_BACKTRACE", "1");
+    }
     android_logger::init_once(
         android_logger::Config::default().with_max_level(log::LevelFilter::Info),
     );
@@ -26,7 +36,6 @@ fn android_main(app: AndroidApp) {
         renderer.add_child(container, id);
     }
 
-    // Eseménykezelő ciklus
     loop {
         app.poll_events(Some(std::time::Duration::from_millis(500)), |event| {
             match event {

@@ -139,6 +139,7 @@ dependencies = [
  "jni",
  "log",
  "ndk",
+ "once_cell",
  "rust-native-core",
  "rust-native-core-android",
  "rust-native-ui",
@@ -368,6 +369,8 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "jni",
+ "log",
+ "once_cell",
  "rust-native-core",
 ]
 

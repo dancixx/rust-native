@@ -6,4 +6,7 @@ edition = "2024"
 [dependencies]
 ahash = { workspace = true }
 jni = { workspace = true }
+log = { workspace = true }
+once_cell = { workspace = true }
+
 rust-native-core = { path = "../rust-native-core" }

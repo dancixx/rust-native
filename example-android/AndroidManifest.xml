@@ -1,6 +1,6 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.rustnative.example"
+    package="com.rustnative"
 >
 
     <application android:label="RustNative Example">
