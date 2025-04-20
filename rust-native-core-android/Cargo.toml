@@ -1,0 +1,9 @@
+[package]
+name = "rust-native-core-android"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ahash = { workspace = true }
+jni = { workspace = true }
+rust-native-core = { path = "../rust-native-core" }

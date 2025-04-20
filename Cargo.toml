@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "rust-native-core",
+    "rust-native-core-android",
+    "rust-native-core-ios",
+    "rust-native-ui",
+    "rust-native-macro",
+    "rust-native-runtime",
+    "example-android",
+]
+
+[workspace.dependencies]
+ahash = "0.8.11"
+anyhow = "1.0.98"
+jni = "0.21.1"
+log = "0.4.27"
+thiserror = "2.0.12"
