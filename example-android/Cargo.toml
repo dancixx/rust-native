@@ -20,9 +20,7 @@ rust-native-ui = { path = "../rust-native-ui" }
 [package.metadata.android]
 package = "com.rustnative"
 build_targets = ["aarch64-linux-android"]
-java_sources = ["./android/app/src/main/java"]
-apk_name = "example-android"
-manifest_path = "android/AndroidManifest.xml"
 
 [lib]
+name = "main"
 crate-type = ["cdylib"]

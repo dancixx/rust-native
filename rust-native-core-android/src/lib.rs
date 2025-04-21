@@ -1,20 +1,22 @@
 use ahash::AHashMap;
 use jni::JNIEnv;
-use jni::objects::{JObject, JValue};
+use jni::objects::{JClass, JObject, JValue};
 use rust_native_core::{Callback, ElementId, PlatformRenderer};
+
+pub mod utils;
 
 pub struct AndroidRenderer<'a> {
     pub env: &'a mut JNIEnv<'a>,
-    pub context: JObject<'a>,
+    pub activity: JObject<'a>,
     pub next_id: u32,
     pub views: AHashMap<ElementId, JObject<'a>>,
 }
 
 impl<'a> AndroidRenderer<'a> {
-    pub fn new(env: &'a mut JNIEnv<'a>, context: JObject<'a>) -> Self {
+    pub fn new(env: &'a mut JNIEnv<'a>, activity: JObject<'a>) -> Self {
         AndroidRenderer {
             env,
-            context,
+            activity,
             next_id: 0,
             views: AHashMap::new(),
         }
@@ -35,7 +37,7 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
             .new_object(
                 "android/widget/TextView",
                 "(Landroid/content/Context;)V",
-                &[JValue::from(&self.context)],
+                &[JValue::from(&self.activity)],
             )
             .expect("Failed to create TextView");
 
@@ -60,7 +62,7 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
             .new_object(
                 "android/widget/LinearLayout",
                 "(Landroid/content/Context;)V",
-                &[JValue::from(&self.context)],
+                &[JValue::from(&self.activity)],
             )
             .expect("Failed to create LinearLayout");
 
@@ -88,63 +90,55 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
     fn commit(&mut self) {
         let root_view = self.views.get(&ElementId(0)).expect("No root view set");
 
-        // let class_loader = self
-        //     .env
-        //     .call_method(
-        //         &self.context,
-        //         "getClassLoader",
-        //         "()Ljava/lang/ClassLoader;",
-        //         &[],
-        //     )
-        //     .unwrap()
-        //     .l()
-        //     .unwrap();
+        let class_loader = self
+            .env
+            .call_method(
+                &self.activity,
+                "getClassLoader",
+                "()Ljava/lang/ClassLoader;",
+                &[],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
 
-        // let desc = self
-        //     .env
-        //     .call_method(class_loader, "toString", "()Ljava/lang/String;", &[])
-        //     .unwrap()
-        //     .l()
-        //     .unwrap();
+        let class_name = self.env.new_string("com.rustnative.UiHelper").unwrap();
+        let uihelper_class = self
+            .env
+            .call_method(
+                &class_loader,
+                "loadClass",
+                "(Ljava/lang/String;)Ljava/lang/Class;",
+                &[JValue::Object(&class_name)],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
 
-        // let str = JString::from(desc);
-        // let rust_str = self.env.get_string(&str).unwrap();
-        // log::info!("ClassLoader: {:?}", rust_str.to_str());
+        let result = self.env.call_static_method(
+            &JClass::from(uihelper_class),
+            "setContentViewOnUiThread",
+            "(Landroid/app/Activity;Landroid/view/View;)V",
+            &[JValue::Object(&self.activity), JValue::Object(root_view)],
+        );
 
-        // let cls = self.ui_helper.as_obj().as_raw();
-        // self.env
-        //     .call_static_method(
-        //         unsafe { JClass::from_raw(cls) },
-        //         "setContentViewOnUiThread",
-        //         "(Landroid/app/Activity;Landroid/view/View;)V",
-        //         &[JValue::Object(&self.context), JValue::Object(root_view)],
-        //     )
-        //     .unwrap();
+        match result {
+            Ok(_) => log::info!("Successfully called setContentViewOnUiThread"),
+            Err(e) => {
+                log::error!("JavaException: {:?}", e);
 
-        // let result = self.env.call_static_method(
-        //     "com/rustnative/UiHelper",
-        //     "setContentViewOnUiThread",
-        //     "(Landroid/app/Activity;Landroid/view/View;)V",
-        //     &[JValue::Object(&self.context), JValue::Object(root_view)],
-        // );
+                // Log Java stacktrace to logcat
+                if let Err(inner) = self.env.exception_describe() {
+                    log::error!("Failed to describe exception: {:?}", inner);
+                }
 
-        // match result {
-        //     Ok(_) => log::info!("✅ Successfully called setContentViewOnUiThread"),
-        //     Err(e) => {
-        //         log::error!("❌ JavaException: {:?}", e);
+                // Clear the Java exception so it doesn't crash the VM
+                if let Err(inner) = self.env.exception_clear() {
+                    log::error!("Failed to clear exception: {:?}", inner);
+                }
 
-        //         // Log Java stacktrace to logcat
-        //         if let Err(inner) = self.env.exception_describe() {
-        //             log::error!("‼️ Failed to describe exception: {:?}", inner);
-        //         }
-
-        //         // Clear the Java exception so it doesn't crash the VM
-        //         if let Err(inner) = self.env.exception_clear() {
-        //             log::error!("‼️ Failed to clear exception: {:?}", inner);
-        //         }
-
-        //         panic!("JavaException occurred: {:?}", e);
-        //     }
-        // }
+                panic!("JavaException occurred: {:?}", e);
+            }
+        }
     }
 }

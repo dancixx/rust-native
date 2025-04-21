@@ -17,16 +17,18 @@ fn android_main(app: AndroidApp) {
         std::env::set_var("RUST_BACKTRACE", "1");
     }
     android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Info),
+        android_logger::Config::default()
+            .with_max_level(log::LevelFilter::Trace)
+            .with_tag("RUST_NATIVE"),
     );
     log::info!("App started");
 
     let vm = unsafe { JavaVM::from_raw(app.vm_as_ptr() as *mut jni::sys::JavaVM) };
     let vm = vm.unwrap();
     let mut env = Box::leak(Box::new(vm.attach_current_thread().unwrap()));
-    let context = unsafe { JObject::from_raw(app.activity_as_ptr() as *mut jni::sys::_jobject) };
+    let activity = unsafe { JObject::from_raw(app.activity_as_ptr() as *mut jni::sys::_jobject) };
 
-    let mut renderer = AndroidRenderer::new(&mut env, context);
+    let mut renderer = AndroidRenderer::new(&mut env, activity);
 
     let container = renderer.create_container();
     let texts = vec!["Hello", "from", "Rust-native"];
