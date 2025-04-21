@@ -4,18 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-android-activity = { version = "0.6.0", features = ["native-activity"] }
-android_logger = "0.15.0"
-ndk = "0.9.0"
-
-ahash = { workspace = true }
-jni = { workspace = true }
-log = { workspace = true }
-once_cell = { workspace = true }
-
-rust-native-core = { path = "../rust-native-core" }
 rust-native-core-android = { path = "../rust-native-core-android" }
-rust-native-ui = { path = "../rust-native-ui" }
 
 [package.metadata.android]
 package = "com.rustnative"
