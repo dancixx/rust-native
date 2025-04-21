@@ -1,17 +1,19 @@
 use ahash::AHashMap;
 use android_activity::{MainEvent, PollEvent};
-use jni::objects::{JClass, JObject, JValue};
-use jni::{JNIEnv, JavaVM};
+use jni::JavaVM;
+use jni::objects::JValue;
 use rust_native_core::{Callback, Component, ElementId, PlatformRenderer};
 use rust_native_ui::Text;
 
 pub mod utils;
 pub use android_activity::AndroidApp;
+pub use jni::JNIEnv;
+pub use jni::objects::{JClass, JObject};
 
 pub struct App;
 
 impl App {
-    pub fn run(app: AndroidApp) {
+    pub fn main<'a>(env: &'a JNIEnv<'a>, activity: JObject<'a>) {
         unsafe {
             std::env::set_var("RUST_BACKTRACE", "1");
         }
@@ -24,12 +26,8 @@ impl App {
 
         log::info!("App started");
 
-        let vm = unsafe { JavaVM::from_raw(app.vm_as_ptr() as *mut jni::sys::JavaVM) };
-        let vm = vm.unwrap();
+        let vm = env.get_java_vm().unwrap();
         let mut env = Box::leak(Box::new(vm.attach_current_thread().unwrap()));
-        let activity =
-            unsafe { JObject::from_raw(app.activity_as_ptr() as *mut jni::sys::_jobject) };
-
         let mut renderer = AndroidRenderer::new(&mut env, activity);
 
         let container = renderer.create_container();
@@ -39,6 +37,15 @@ impl App {
             let id = view.render(&mut renderer);
             renderer.add_child(container, id);
         }
+        renderer.commit();
+    }
+
+    pub fn run(app: AndroidApp) {
+        android_logger::init_once(
+            android_logger::Config::default()
+                .with_max_level(log::LevelFilter::Trace)
+                .with_tag("RUST_NATIVE"),
+        );
 
         loop {
             app.poll_events(Some(std::time::Duration::from_millis(500)), |event| {
@@ -49,7 +56,6 @@ impl App {
                     }
                     PollEvent::Main(main_event) => {
                         log::info!("Main event: {:?}", main_event);
-                        renderer.commit();
                     }
                     PollEvent::Timeout => {
                         log::info!("Polling timeout tick");

@@ -3,7 +3,7 @@
 
     <application android:label="RustNative">
         <activity
-            android:name="android.app.NativeActivity"
+            android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true"
         >
