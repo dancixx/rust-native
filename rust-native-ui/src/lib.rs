@@ -1,3 +1,2 @@
-pub mod text;
-
-pub use text::Text;
+pub mod android;
+pub mod ios;

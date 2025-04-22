@@ -3,7 +3,7 @@ use android_activity::{MainEvent, PollEvent};
 use jni::JavaVM;
 use jni::objects::JValue;
 use rust_native_core::{Callback, Component, ElementId, PlatformRenderer};
-use rust_native_ui::Text;
+use rust_native_ui::android::text::Text;
 
 pub mod utils;
 pub use android_activity::AndroidApp;
@@ -113,9 +113,12 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
 
         let java_str = self.env.new_string(text).unwrap();
         self.env
-            .call_method(&text_view, "setText", "(Ljava/lang/CharSequence;)V", &[
-                JValue::from(&java_str),
-            ])
+            .call_method(
+                &text_view,
+                "setText",
+                "(Ljava/lang/CharSequence;)V",
+                &[JValue::from(&java_str)],
+            )
             .expect("Failed to call setText");
         self.views.insert(id, text_view);
         id
@@ -137,9 +140,12 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
             .expect("Failed to create LinearLayout");
 
         self.env
-            .call_method(&layout, "setBackgroundColor", "(I)V", &[JValue::Int(
-                0xFFFFFFFFu32 as i32,
-            )])
+            .call_method(
+                &layout,
+                "setBackgroundColor",
+                "(I)V",
+                &[JValue::Int(0xFFFFFFFFu32 as i32)],
+            )
             .expect("Failed to set background color");
 
         self.views.insert(id, layout);
@@ -151,9 +157,12 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
         let child_view = self.views.get(&child).expect("Child view not found");
 
         self.env
-            .call_method(parent_view, "addView", "(Landroid/view/View;)V", &[
-                JValue::from(child_view),
-            ])
+            .call_method(
+                parent_view,
+                "addView",
+                "(Landroid/view/View;)V",
+                &[JValue::from(child_view)],
+            )
             .expect("Failed to call addView");
     }
 

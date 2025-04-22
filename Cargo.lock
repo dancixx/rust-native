@@ -372,6 +372,9 @@ dependencies = [
 [[package]]
 name = "rust-native-core-ios"
 version = "0.1.0"
+dependencies = [
+ "rust-native-core",
+]
 
 [[package]]
 name = "rust-native-macro"
