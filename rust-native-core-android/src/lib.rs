@@ -1,7 +1,8 @@
 use ahash::AHashMap;
 use android_activity::{MainEvent, PollEvent};
+use anyhow::Result;
 use jni::JavaVM;
-use jni::objects::JValue;
+use jni::objects::{GlobalRef, JValue};
 use rust_native_core::{Callback, Component, ElementId, PlatformRenderer};
 use rust_native_ui::android::text::Text;
 
@@ -28,7 +29,7 @@ impl App {
 
         let vm = env.get_java_vm().unwrap();
         let mut env = Box::leak(Box::new(vm.attach_current_thread().unwrap()));
-        let mut renderer = AndroidRenderer::new(&mut env, activity);
+        let mut renderer = AndroidRenderer::new(&mut env, activity).unwrap();
 
         let container = renderer.create_container();
         let texts = vec!["Hello", "from", "Rust-native"];
@@ -78,18 +79,30 @@ impl App {
 pub struct AndroidRenderer<'a> {
     pub env: &'a mut JNIEnv<'a>,
     pub activity: JObject<'a>,
+    pub class_loader: GlobalRef,
     pub next_id: u32,
     pub views: AHashMap<ElementId, JObject<'a>>,
 }
 
 impl<'a> AndroidRenderer<'a> {
-    pub fn new(env: &'a mut JNIEnv<'a>, activity: JObject<'a>) -> Self {
-        AndroidRenderer {
+    pub fn new(env: &'a mut JNIEnv<'a>, activity: JObject<'a>) -> Result<Self> {
+        let class_loader = env
+            .call_method(
+                &activity,
+                "getClassLoader",
+                "()Ljava/lang/ClassLoader;",
+                &[],
+            )?
+            .l()?;
+        let class_loader = env.new_global_ref(&class_loader)?;
+
+        Ok(AndroidRenderer {
             env,
             activity,
+            class_loader,
             next_id: 0,
             views: AHashMap::new(),
-        }
+        })
     }
 
     fn gen_id(&mut self) -> ElementId {
@@ -169,23 +182,11 @@ impl<'a> PlatformRenderer for AndroidRenderer<'a> {
     fn commit(&mut self) {
         let root_view = self.views.get(&ElementId(0)).expect("No root view set");
 
-        let class_loader = self
-            .env
-            .call_method(
-                &self.activity,
-                "getClassLoader",
-                "()Ljava/lang/ClassLoader;",
-                &[],
-            )
-            .unwrap()
-            .l()
-            .unwrap();
-
         let class_name = self.env.new_string("com.rustnative.UiHelper").unwrap();
         let uihelper_class = self
             .env
             .call_method(
-                &class_loader,
+                &self.class_loader,
                 "loadClass",
                 "(Ljava/lang/String;)Ljava/lang/Class;",
                 &[JValue::Object(&class_name)],
