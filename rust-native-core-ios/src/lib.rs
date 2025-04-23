@@ -49,9 +49,6 @@ unsafe extern "C" {
     fn commit();
 }
 
-// -------------------------------------------------------------------------------------------------
-// iOS-specific renderer implementing the cross-platform trait
-// -------------------------------------------------------------------------------------------------
 pub struct IOSRenderer {
     callbacks: AHashMap<u32, Callback>,
     next_id: u32,
