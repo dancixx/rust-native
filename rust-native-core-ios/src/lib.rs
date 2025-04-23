@@ -1,9 +1,48 @@
 use std::{
     collections::HashMap,
     ffi::{CString, c_char},
+    sync::Arc,
 };
 
+use ahash::AHashMap;
+use objc2::{rc::Retained, runtime::AnyObject};
 use rust_native_core::{Callback, ElementId, PlatformRenderer};
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rust_app_main() {
+    App::main();
+}
+
+// #[no_mangle]
+// pub extern "C" fn rust_handle_callback(id: u32) {
+//     unsafe {
+//         if let Some(app) = APP.as_mut() {
+//             app.handle_callback(id);
+//         }
+//     }
+// }
+
+pub struct App;
+
+impl App {
+    pub fn main() {
+        let mut renderer = IOSRenderer::new();
+        let root = renderer.create_container();
+        let text = renderer.create_text("Welcome to Rust+iOS");
+        let btn = renderer.create_button(
+            "Click",
+            Arc::new(|| {
+                println!("Button clicked");
+            }),
+        );
+
+        renderer.add_child(root, text);
+        renderer.add_child(root, btn);
+        renderer.commit();
+    }
+
+    pub fn run() {}
+}
 
 unsafe extern "C" {
     fn create_text(text: *const c_char) -> u32;
@@ -16,6 +55,7 @@ unsafe extern "C" {
 pub struct IOSRenderer {
     callbacks: HashMap<u32, Callback>,
     next_id: u32,
+    pub views: AHashMap<ElementId, Retained<AnyObject>>,
 }
 
 impl IOSRenderer {
@@ -23,6 +63,7 @@ impl IOSRenderer {
         IOSRenderer {
             callbacks: HashMap::new(),
             next_id: 0,
+            views: AHashMap::new(),
         }
     }
 
@@ -39,6 +80,7 @@ impl IOSRenderer {
         }
     }
 }
+
 impl PlatformRenderer for IOSRenderer {
     fn create_text(&mut self, text: &str) -> ElementId {
         let c = CString::new(text).unwrap();
