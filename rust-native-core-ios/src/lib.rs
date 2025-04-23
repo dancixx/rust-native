@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    cell::RefCell,
     ffi::{CString, c_char},
     sync::Arc,
 };
@@ -8,40 +8,37 @@ use ahash::AHashMap;
 use objc2::{rc::Retained, runtime::AnyObject};
 use rust_native_core::{Callback, ElementId, PlatformRenderer};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn rust_app_main() {
-    App::main();
+thread_local! {
+    static IOS_RENDERER: RefCell<Option<IOSRenderer>> = RefCell::new(None);
 }
 
-// #[no_mangle]
-// pub extern "C" fn rust_handle_callback(id: u32) {
-//     unsafe {
-//         if let Some(app) = APP.as_mut() {
-//             app.handle_callback(id);
-//         }
-//     }
-// }
+#[unsafe(no_mangle)]
+pub extern "C" fn rust_app_main() {
+    let mut renderer = IOSRenderer::new();
 
-pub struct App;
+    let root = renderer.create_container();
+    let text = renderer.create_text("Welcome to Rust+iOS");
+    let btn = renderer.create_button(
+        "Click",
+        Arc::new(|| {
+            println!("Button clicked");
+        }),
+    );
 
-impl App {
-    pub fn main() {
-        let mut renderer = IOSRenderer::new();
-        let root = renderer.create_container();
-        let text = renderer.create_text("Welcome to Rust+iOS");
-        let btn = renderer.create_button(
-            "Click",
-            Arc::new(|| {
-                println!("Button clicked");
-            }),
-        );
+    renderer.add_child(root, text);
+    renderer.add_child(root, btn);
+    renderer.commit();
 
-        renderer.add_child(root, text);
-        renderer.add_child(root, btn);
-        renderer.commit();
-    }
+    IOS_RENDERER.with(|cell| *cell.borrow_mut() = Some(renderer));
+}
 
-    pub fn run() {}
+#[unsafe(no_mangle)]
+pub extern "C" fn rust_handle_callback(id: u32) {
+    IOS_RENDERER.with(|cell| {
+        if let Some(renderer) = cell.borrow_mut().as_mut() {
+            renderer.handle_callback(id);
+        }
+    });
 }
 
 unsafe extern "C" {
@@ -52,16 +49,19 @@ unsafe extern "C" {
     fn commit();
 }
 
+// -------------------------------------------------------------------------------------------------
+// iOS-specific renderer implementing the cross-platform trait
+// -------------------------------------------------------------------------------------------------
 pub struct IOSRenderer {
-    callbacks: HashMap<u32, Callback>,
+    callbacks: AHashMap<u32, Callback>,
     next_id: u32,
     pub views: AHashMap<ElementId, Retained<AnyObject>>,
 }
 
 impl IOSRenderer {
     pub fn new() -> Self {
-        IOSRenderer {
-            callbacks: HashMap::new(),
+        Self {
+            callbacks: AHashMap::new(),
             next_id: 0,
             views: AHashMap::new(),
         }
@@ -75,22 +75,22 @@ impl IOSRenderer {
     }
 
     pub fn handle_callback(&mut self, id: u32) {
-        if let Some(callback) = self.callbacks.remove(&id) {
-            callback();
+        if let Some(cb) = self.callbacks.remove(&id) {
+            cb();
         }
     }
 }
 
 impl PlatformRenderer for IOSRenderer {
     fn create_text(&mut self, text: &str) -> ElementId {
-        let c = CString::new(text).unwrap();
+        let c = CString::new(text).expect("CString::new failed");
         let id = unsafe { create_text(c.as_ptr()) };
         ElementId(id)
     }
 
     fn create_button(&mut self, label: &str, on_click: Callback) -> ElementId {
         let cb_id = self.register_callback(on_click);
-        let c = CString::new(label).unwrap();
+        let c = CString::new(label).expect("CString::new failed");
         let id = unsafe { create_button(c.as_ptr(), cb_id) };
         ElementId(id)
     }
